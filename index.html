@@ -79,30 +79,26 @@
         console.log('QR-код отсканирован:', decodedText);
         
         try {
-            // Извлекаем ID из QR-кода
-            const match = decodedText.match(/start=(\d+)/);
-            if (!match) {
+            // Проверяем, что это ссылка на бота
+            if (!decodedText.includes('t.me/')) {
                 console.error('Неверный формат QR-кода');
                 showStatus('Неверный формат QR-кода', false);
                 return;
             }
             
-            const userId = match[1];
-            console.log('Извлечен ID:', userId);
+            // Открываем ссылку в Telegram
+            console.log('Открываем ссылку в Telegram...');
+            tg.openLink(decodedText);
             
-            // Отправляем только ID
-            console.log('Отправляем данные в Telegram...');
-            tg.sendData(userId);
-            console.log('Данные успешно отправлены');
-            
-            // Закрываем WebApp через 2 секунды
+            // Закрываем WebApp
             setTimeout(() => {
                 console.log('Закрываем WebApp...');
                 tg.close();
-            }, 2000);
+            }, 1000);
+            
         } catch (error) {
-            console.error('Ошибка при отправке данных:', error);
-            showStatus('Ошибка при отправке данных', false);
+            console.error('Ошибка при обработке QR-кода:', error);
+            showStatus('Ошибка при обработке QR-кода', false);
         }
     }
 
