@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #reader {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px;
+        }
+        #result {
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div id="reader"></div>
+    <div id="result"></div>
+
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            html5QrcodeScanner.pause();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `Сканирование успешно!<br>Обработка...`;
+            resultDiv.className = 'success';
+            
+            Telegram.WebApp.sendData(decodedText);
+            
+            // Закрываем WebApp через 2 секунды
+            setTimeout(() => {
+                Telegram.WebApp.close();
+            }, 2000);
+        }
+
+        function onScanFailure(error) {
+            console.warn(`Ошибка сканирования: ${error}`);
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            }
+        );
+        
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+</body>
+</html> 
