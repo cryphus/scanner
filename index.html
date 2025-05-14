@@ -167,8 +167,18 @@
             // Запрашиваем доступ к камере и сразу начинаем сканирование
             Html5Qrcode.getCameras().then(devices => {
                 if (devices && devices.length) {
-                    // Используем первую доступную камеру
-                    const cameraId = devices[0].id;
+                    // Ищем основную (заднюю) камеру
+                    const backCamera = devices.find(device => 
+                        device.label.toLowerCase().includes('back') || 
+                        device.label.toLowerCase().includes('rear') ||
+                        device.label.toLowerCase().includes('основная') ||
+                        device.label.toLowerCase().includes('задняя')
+                    );
+                    
+                    // Если нашли основную камеру - используем её, иначе берем последнюю в списке
+                    // (обычно последняя камера в списке - это основная)
+                    const cameraId = backCamera ? backCamera.id : devices[devices.length - 1].id;
+                    
                     html5QrcodeScanner.start(
                         cameraId,
                         config,
