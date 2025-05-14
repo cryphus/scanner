@@ -1,75 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>QR Scanner</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <meta charset="UTF-8" />
+    <title>QR‑Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        :root {
+            --tg-theme-bg: #f0f0f0;
+            --tg-theme-text: #222;
+            --tg-theme-button: #2a9d8f;
+        }
         body {
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
+            background: var(--tg-theme-bg);
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--tg-theme-text);
         }
-        #reader {
+        h1 {
+            font-size: 1.4rem;
+            margin: 1rem 0;
+        }
+        #video-preview {
             width: 100%;
-            max-width: 600px;
-            margin: 20px;
+            max-width: 480px;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
         }
         #result {
-            margin: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            max-width: 480px;
+            text-align: center;
         }
         .success {
-            color: #28a745;
+            background: #d1ffd7;
+            color: #065f46;
         }
         .error {
-            color: #dc3545;
+            background: #ffd6d6;
+            color: #c53030;
         }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <div id="reader"></div>
-    <div id="result"></div>
+    <h1>Сканируйте QR‑код</h1>
+    <video id="video-preview" playsinline></video>
+    <div id="result" class="hidden"></div>
 
-    <script>
-        function onScanSuccess(decodedText, decodedResult) {
-            html5QrcodeScanner.pause();
-            
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `Сканирование успешно!<br>Обработка...`;
-            resultDiv.className = 'success';
-            
-            Telegram.WebApp.sendData(decodedText);
-            
-            // Закрываем WebApp через 2 секунды
-            setTimeout(() => {
-                Telegram.WebApp.close();
-            }, 2000);
-        }
+    <script type="module">
+        import { BrowserMultiFormatReader, NotFoundException } from 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/+esm';
 
-        function onScanFailure(error) {
-            console.warn(`Ошибка сканирования: ${error}`);
-        }
+        // Оповестим Telegram, что WebApp готов
+        Telegram.WebApp.ready();
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            { 
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
+        const codeReader = new BrowserMultiFormatReader();
+        const previewEl = document.getElementById('video-preview');
+        const resultEl  = document.getElementById('result');
+
+        async function startScanner() {
+            try {
+                const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+                const deviceId = devices[0]?.deviceId;
+                await codeReader.decodeFromVideoDevice(deviceId, previewEl, (result, err) => {
+                    if (result) {
+                        onSuccess(result.getText());
+                    } else if (err && !(err instanceof NotFoundException)) {
+                        console.error(err);
+                    }
+                });
+            } catch (e) {
+                onError(e);
             }
-        );
-        
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function onSuccess(text) {
+            codeReader.reset();
+            resultEl.textContent = `✔ ${text}`;
+            resultEl.className = 'success';
+            Telegram.WebApp.sendData(text);
+            setTimeout(() => Telegram.WebApp.close(), 1500);
+        }
+
+        function onError(err) {
+            console.error('QR error:', err);
+            resultEl.textContent = 'Не удалось получить доступ к камере или прочитать QR-код';
+            resultEl.className = 'error';
+        }
+
+        startScanner();
     </script>
 </body>
-</html> 
+</html>
