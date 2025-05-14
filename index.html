@@ -150,8 +150,8 @@
                 // Преобразуем ссылку в HTTPS формат
                 let botLink;
                 if (decodedText.includes('t.me/')) {
-                    // Оставляем оригинальную ссылку t.me
-                    botLink = decodedText;
+                    // Добавляем протокол https:// к ссылке t.me
+                    botLink = `https://${decodedText}`;
                 } else if (decodedText.includes('tg://')) {
                     // Преобразуем tg:// ссылку в t.me
                     const parts = decodedText.split('?');
