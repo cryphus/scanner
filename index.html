@@ -35,12 +35,40 @@
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
 
         #reader video {
             width: 100%;
             height: auto;
             border-radius: 20px;
+        }
+
+        .camera-switch {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+
+        .camera-switch:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .camera-switch svg {
+            width: 20px;
+            height: 20px;
         }
 
         .scan-line {
@@ -112,13 +140,23 @@
 </head>
 <body>
     <div class="container">
-        <div id="reader"></div>
+        <div id="reader">
+            <button class="camera-switch" onclick="switchCamera()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
+                Сменить камеру
+            </button>
+        </div>
         <div id="status" class="status"></div>
     </div>
 
     <script>
         let html5QrcodeScanner = null;
         const statusDiv = document.getElementById('status');
+        let currentCameraIndex = 0;
+        let availableCameras = [];
 
         function showStatus(message, isSuccess) {
             statusDiv.textContent = message;
@@ -150,8 +188,29 @@
             console.warn(`Ошибка сканирования: ${error}`);
         }
 
-        // Инициализация сканера
-        function initScanner() {
+        async function switchCamera() {
+            if (availableCameras.length <= 1) {
+                showStatus('Доступна только одна камера', false);
+                return;
+            }
+
+            // Останавливаем текущий сканер
+            if (html5QrcodeScanner) {
+                await html5QrcodeScanner.stop();
+            }
+
+            // Переключаемся на следующую камеру
+            currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+            const cameraId = availableCameras[currentCameraIndex].id;
+            
+            // Показываем информацию о выбранной камере
+            showStatus(`Камера: ${availableCameras[currentCameraIndex].label}`, true);
+
+            // Запускаем сканер с новой камерой
+            startScanner(cameraId);
+        }
+
+        function startScanner(cameraId) {
             const config = {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
@@ -163,23 +222,25 @@
             };
 
             html5QrcodeScanner = new Html5Qrcode("reader");
-            
-            // Запрашиваем доступ к камере и сразу начинаем сканирование
+            html5QrcodeScanner.start(
+                cameraId,
+                config,
+                onScanSuccess,
+                onScanFailure
+            );
+        }
+
+        // Инициализация сканера
+        function initScanner() {
+            // Запрашиваем доступ к камере
             Html5Qrcode.getCameras().then(devices => {
                 if (devices && devices.length) {
-                    // Выводим информацию о доступных камерах
+                    availableCameras = devices;
                     console.log('Доступные камеры:', devices);
                     
-                    // Используем последнюю камеру в списке (обычно это основная камера)
-                    const cameraId = devices[devices.length - 1].id;
-                    console.log('Выбрана камера:', devices[devices.length - 1].label);
-                    
-                    html5QrcodeScanner.start(
-                        cameraId,
-                        config,
-                        onScanSuccess,
-                        onScanFailure
-                    );
+                    // Начинаем с первой камеры
+                    currentCameraIndex = 0;
+                    startScanner(devices[0].id);
                 }
             }).catch(err => {
                 console.error('Ошибка при получении списка камер:', err);
