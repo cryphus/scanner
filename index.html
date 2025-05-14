@@ -1,106 +1,188 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <title>QR‑Scanner</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>QR Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root {
-            --tg-theme-bg: #f0f0f0;
-            --tg-theme-text: #222;
-            --tg-theme-button: #2a9d8f;
-        }
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            background: var(--tg-theme-bg);
-            font-family: Arial, Helvetica, sans-serif;
-            color: var(--tg-theme-text);
+            justify-content: center;
         }
-        h1 {
-            font-size: 1.4rem;
-            margin: 1rem 0;
-        }
-        #video-preview {
+
+        .container {
             width: 100%;
-            max-width: 480px;
-            aspect-ratio: 4/3;
-            object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-        }
-        #result {
-            margin-top: 1rem;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            font-weight: 600;
-            max-width: 480px;
+            max-width: 500px;
+            padding: 20px;
             text-align: center;
         }
-        .success {
-            background: #d1ffd7;
-            color: #065f46;
+
+        #reader {
+            width: 100%;
+            background: #2a2a2a;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        .error {
-            background: #ffd6d6;
-            color: #c53030;
+
+        #reader video {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
         }
-        .hidden { display: none; }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #00ff00;
+            box-shadow: 0 0 8px #00ff00;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #2a2a2a;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .status.visible {
+            opacity: 1;
+        }
+
+        .status.success {
+            background: #28a745;
+        }
+
+        .status.error {
+            background: #dc3545;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .overlay-content {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 80%;
+        }
     </style>
 </head>
 <body>
-    <h1>Сканируйте QR‑код</h1>
-    <video id="video-preview" playsinline></video>
-    <div id="result" class="hidden"></div>
+    <div class="container">
+        <div id="reader"></div>
+        <div id="status" class="status"></div>
+    </div>
 
-    <script type="module">
-        import { BrowserMultiFormatReader, NotFoundException } from 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/+esm';
+    <script>
+        let html5QrcodeScanner = null;
+        const statusDiv = document.getElementById('status');
 
-        // Оповестим Telegram, что WebApp готов
-        Telegram.WebApp.ready();
+        function showStatus(message, isSuccess) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${isSuccess ? 'success' : 'error'} visible`;
+            setTimeout(() => {
+                statusDiv.className = 'status';
+            }, 3000);
+        }
 
-        const codeReader = new BrowserMultiFormatReader();
-        const previewEl = document.getElementById('video-preview');
-        const resultEl  = document.getElementById('result');
-
-        async function startScanner() {
-            try {
-                const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-                const deviceId = devices[0]?.deviceId;
-                await codeReader.decodeFromVideoDevice(deviceId, previewEl, (result, err) => {
-                    if (result) {
-                        onSuccess(result.getText());
-                    } else if (err && !(err instanceof NotFoundException)) {
-                        console.error(err);
-                    }
-                });
-            } catch (e) {
-                onError(e);
+        function onScanSuccess(decodedText, decodedResult) {
+            // Останавливаем сканер
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.pause();
             }
+
+            // Показываем статус
+            showStatus('QR-код успешно отсканирован!', true);
+
+            // Отправляем данные в Telegram
+            Telegram.WebApp.sendData(decodedText);
+
+            // Закрываем WebApp через 2 секунды
+            setTimeout(() => {
+                Telegram.WebApp.close();
+            }, 2000);
         }
 
-        function onSuccess(text) {
-            codeReader.reset();
-            resultEl.textContent = `✔ ${text}`;
-            resultEl.className = 'success';
-            Telegram.WebApp.sendData(text);
-            setTimeout(() => Telegram.WebApp.close(), 1500);
+        function onScanFailure(error) {
+            console.warn(`Ошибка сканирования: ${error}`);
         }
 
-        function onError(err) {
-            console.error('QR error:', err);
-            resultEl.textContent = 'Не удалось получить доступ к камере или прочитать QR-код';
-            resultEl.className = 'error';
+        // Инициализация сканера
+        function initScanner() {
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                showTorchButtonIfSupported: true,
+                showZoomSliderIfSupported: true,
+                defaultZoomValueIfSupported: 2,
+                formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+            };
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            // Запрашиваем доступ к камере и сразу начинаем сканирование
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    // Используем первую доступную камеру
+                    const cameraId = devices[0].id;
+                    html5QrcodeScanner.start(
+                        cameraId,
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                }
+            }).catch(err => {
+                showStatus('Ошибка доступа к камере', false);
+            });
         }
 
-        startScanner();
+        // Запускаем сканер при загрузке страницы
+        window.onload = initScanner;
     </script>
 </body>
-</html>
+</html> 
