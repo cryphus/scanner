@@ -71,8 +71,33 @@
     function onScanSuccess(decodedText){
         if(html5QrcodeScanner){html5QrcodeScanner.pause();}
         showStatus('QR‑код успешно отсканирован!',true);
-        Telegram.WebApp.sendData(decodedText);
-        setTimeout(()=>Telegram.WebApp.close(),2000);
+        
+        // Отладочная информация
+        console.log('QR-код отсканирован:', decodedText);
+        console.log('Telegram.WebApp:', Telegram.WebApp);
+        
+        try {
+            // Проверяем, что WebApp инициализирован
+            if (!Telegram.WebApp) {
+                console.error('Telegram.WebApp не инициализирован');
+                showStatus('Ошибка: WebApp не инициализирован', false);
+                return;
+            }
+            
+            // Отправляем данные в Telegram
+            console.log('Отправляем данные в Telegram...');
+            Telegram.WebApp.sendData(decodedText);
+            console.log('Данные успешно отправлены');
+            
+            // Закрываем WebApp через 2 секунды
+            setTimeout(() => {
+                console.log('Закрываем WebApp...');
+                Telegram.WebApp.close();
+            }, 2000);
+        } catch (error) {
+            console.error('Ошибка при отправке данных:', error);
+            showStatus('Ошибка при отправке данных', false);
+        }
     }
 
     function onScanFailure(err){console.warn('Ошибка сканирования:',err);}
