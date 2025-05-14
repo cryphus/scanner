@@ -147,14 +147,14 @@
                     return;
                 }
                 
-                // Преобразуем ссылку в формат tg://msg
+                // Преобразуем ссылку в формат tg://resolve
                 let botLink;
                 if (decodedText.includes('t.me/')) {
                     // Извлекаем имя бота и параметры из ссылки t.me
                     const botName = decodedText.split('t.me/')[1].split('?')[0];
                     const params = decodedText.split('?')[1];
-                    // Создаем ссылку в формате tg://msg
-                    botLink = `tg://msg?to=${botName}&text=/start ${params}`;
+                    // Создаем ссылку в формате tg://resolve
+                    botLink = `tg://resolve?domain=${botName}&start=${params.split('=')[1]}`;
                 } else {
                     botLink = decodedText;
                 }
