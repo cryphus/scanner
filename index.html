@@ -1,148 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>QR Scanner</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <title>QR Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Библиотеки -->
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{
+            display:flex;flex-direction:column;justify-content:center;align-items:center;
+            min-height:100vh;padding:20px;
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+            background:#1a1a1a;color:#fff;
         }
-
-        body {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .container{width:100%;max-width:500px;text-align:center}
+        #reader{
+            position:relative;width:100%;border-radius:20px;overflow:hidden;background:#2a2a2a;
+            box-shadow:0 8px 32px rgba(0,0,0,.3);
         }
-
-        .container {
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-            text-align: center;
+        #reader video{width:100%;height:auto;border-radius:20px}
+        .camera-switch{
+            position:absolute;bottom:20px;right:20px;z-index:10;
+            display:flex;align-items:center;gap:8px;
+            background:rgba(0,0,0,.5);border:none;border-radius:20px;
+            color:#fff;padding:10px 20px;font-size:16px;cursor:pointer;
+            transition:background .3s;
         }
-
-        #reader {
-            width: 100%;
-            background: #2a2a2a;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            position: relative;
+        .camera-switch:hover{background:rgba(0,0,0,.7)}
+        .camera-switch svg{width:20px;height:20px}
+        .status{
+            margin-top:20px;padding:15px;border-radius:10px;background:#2a2a2a;font-size:16px;
+            opacity:0;transition:opacity .3s ease;
         }
-
-        #reader video {
-            width: 100%;
-            height: auto;
-            border-radius: 20px;
-        }
-
-        .camera-switch {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 1000;
-            transition: background-color 0.3s;
-        }
-
-        .camera-switch:hover {
-            background: rgba(0, 0, 0, 0.7);
-        }
-
-        .camera-switch svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        .scan-line {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: #00ff00;
-            box-shadow: 0 0 8px #00ff00;
-            animation: scan 2s linear infinite;
-        }
-
-        @keyframes scan {
-            0% { top: 0; }
-            50% { top: 100%; }
-            100% { top: 0; }
-        }
-
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            background: #2a2a2a;
-            font-size: 16px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .status.visible {
-            opacity: 1;
-        }
-
-        .status.success {
-            background: #28a745;
-        }
-
-        .status.error {
-            background: #dc3545;
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .overlay.visible {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .overlay-content {
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 80%;
-        }
+        .status.visible{opacity:1}
+        .status.success{background:#28a745}
+        .status.error{background:#dc3545}
     </style>
 </head>
 <body>
     <div class="container">
         <div id="reader">
             <button class="camera-switch" onclick="switchCamera()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                     <circle cx="12" cy="13" r="4"/>
                 </svg>
@@ -152,104 +54,72 @@
         <div id="status" class="status"></div>
     </div>
 
-    <script>
-        let html5QrcodeScanner = null;
-        const statusDiv = document.getElementById('status');
-        let currentCameraIndex = 0;
-        let availableCameras = [];
+<script>
+    Telegram.WebApp.ready(); // сообщаем Telegram, что WebApp загружен
 
-        function showStatus(message, isSuccess) {
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${isSuccess ? 'success' : 'error'} visible`;
-            setTimeout(() => {
-                statusDiv.className = 'status';
-            }, 3000);
-        }
+    let html5QrcodeScanner;
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+    const statusDiv = document.getElementById('status');
 
-        function onScanSuccess(decodedText, decodedResult) {
-            // Останавливаем сканер
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.pause();
-            }
+    function showStatus(message, success){
+        statusDiv.textContent = message;
+        statusDiv.className = `status ${success? 'success':'error'} visible`;
+        setTimeout(()=>statusDiv.className='status',3000);
+    }
 
-            // Показываем статус
-            showStatus('QR-код успешно отсканирован!', true);
+    function onScanSuccess(decodedText){
+        if(html5QrcodeScanner){html5QrcodeScanner.pause();}
+        showStatus('QR‑код успешно отсканирован!',true);
+        Telegram.WebApp.sendData(decodedText);
+        setTimeout(()=>Telegram.WebApp.close(),2000);
+    }
 
-            // Отправляем данные в Telegram
-            Telegram.WebApp.sendData(decodedText);
+    function onScanFailure(err){console.warn('Ошибка сканирования:',err);}
 
-            // Закрываем WebApp через 2 секунды
-            setTimeout(() => {
-                Telegram.WebApp.close();
-            }, 2000);
-        }
+    function startScanner(cameraConfig){
+        const config={
+            fps:10,
+            qrbox:{width:250,height:250},
+            aspectRatio:1,
+            showTorchButtonIfSupported:true,
+            showZoomSliderIfSupported:true,
+            defaultZoomValueIfSupported:2,
+            formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE]
+        };
 
-        function onScanFailure(error) {
-            console.warn(`Ошибка сканирования: ${error}`);
-        }
+        html5QrcodeScanner=new Html5Qrcode('reader');
+        html5QrcodeScanner.start(cameraConfig,config,onScanSuccess,onScanFailure)
+            .catch(err=>{console.error(err);showStatus('Не удалось запустить камеру',false);});
+    }
 
-        async function switchCamera() {
-            if (availableCameras.length <= 1) {
-                showStatus('Доступна только одна камера', false);
-                return;
-            }
+    async function switchCamera(){
+        if(availableCameras.length<2){showStatus('Доступна только одна камера',false);return;}
+        if(html5QrcodeScanner){await html5QrcodeScanner.stop();}
+        currentCameraIndex=(currentCameraIndex+1)%availableCameras.length;
+        const cam=availableCameras[currentCameraIndex];
+        showStatus(`Камера: ${cam.label||cam.id}`,true);
+        startScanner(cam.id);
+    }
 
-            // Останавливаем текущий сканер
-            if (html5QrcodeScanner) {
-                await html5QrcodeScanner.stop();
-            }
+    function initScanner(){
+        // Сначала пытаемся получить список устройств
+        Html5Qrcode.getCameras().then(devices=>{
+            if(!devices.length){showStatus('Камеры не найдены',false);return;}
+            availableCameras=devices;
+            // Ищем камеру с пометкой rear/back/environment
+            const rearIdx=devices.findIndex(d=>/rear|back|environment/i.test(d.label));
+            currentCameraIndex=rearIdx>=0? rearIdx:0;
+            const initialCam=devices[currentCameraIndex];
+            startScanner(initialCam.id);
+        }).catch(err=>{
+            console.warn('Не удалось получить список камер, пробуем facingMode',err);
+            // Если список недоступен (iOS до разрешения) — пробуем constraints
+            startScanner({ facingMode:{ exact:'environment' } });
+        });
+    }
 
-            // Переключаемся на следующую камеру
-            currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-            const cameraId = availableCameras[currentCameraIndex].id;
-            
-            // Показываем информацию о выбранной камере
-            showStatus(`Камера: ${availableCameras[currentCameraIndex].label}`, true);
-
-            // Запускаем сканер с новой камерой
-            startScanner(cameraId);
-        }
-
-        function startScanner(cameraId) {
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
-                showTorchButtonIfSupported: true,
-                showZoomSliderIfSupported: true,
-                defaultZoomValueIfSupported: 2,
-                formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
-            };
-
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start(
-                cameraId,
-                config,
-                onScanSuccess,
-                onScanFailure
-            );
-        }
-
-        // Инициализация сканера
-        function initScanner() {
-            // Запрашиваем доступ к камере
-            Html5Qrcode.getCameras().then(devices => {
-                if (devices && devices.length) {
-                    availableCameras = devices;
-                    console.log('Доступные камеры:', devices);
-                    
-                    // Начинаем с первой камеры
-                    currentCameraIndex = 0;
-                    startScanner(devices[0].id);
-                }
-            }).catch(err => {
-                console.error('Ошибка при получении списка камер:', err);
-                showStatus('Ошибка доступа к камере', false);
-            });
-        }
-
-        // Запускаем сканер при загрузке страницы
-        window.onload = initScanner;
-    </script>
+    window.addEventListener('load',initScanner);
+</script>
 </body>
-</html> 
+</html>
