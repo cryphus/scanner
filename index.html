@@ -147,22 +147,23 @@
                     return;
                 }
                 
-                // Преобразуем ссылку в формат tg://resolve
+                // Преобразуем ссылку в HTTPS формат
                 let botLink;
                 if (decodedText.includes('t.me/')) {
-                    // Извлекаем имя бота и параметры из ссылки t.me
-                    const botName = decodedText.split('t.me/')[1].split('?')[0];
-                    const params = decodedText.split('?')[1];
-                    // Создаем ссылку в формате tg://resolve
-                    botLink = `tg://resolve?domain=${botName}&start=${params.split('=')[1]}`;
-                } else {
+                    // Оставляем оригинальную ссылку t.me
                     botLink = decodedText;
+                } else if (decodedText.includes('tg://')) {
+                    // Преобразуем tg:// ссылку в t.me
+                    const parts = decodedText.split('?');
+                    const domain = parts[0].split('//')[1].split('/')[0];
+                    const params = parts[1];
+                    botLink = `https://t.me/${domain}?${params}`;
                 }
                 
                 console.log('Открываем ссылку:', botLink);
                 
-                // Открываем ссылку в Telegram
-                tg.openLink(botLink);
+                // Открываем ссылку в браузере
+                window.location.href = botLink;
                 
                 // Закрываем WebApp
                 setTimeout(() => {
